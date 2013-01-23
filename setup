@@ -1,0 +1,19 @@
+set -u
+set -e
+
+. "$plugin_dir/php/functions"
+
+# Creates the base of the app
+create_app_skel
+init_vars
+parse_envfile
+
+# Installs everything
+install_php
+install_httpd
+install_newrelic
+export_paths "php httpd"
+install_app
+
+# Writes control files
+write_control
