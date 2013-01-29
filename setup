@@ -9,11 +9,8 @@ init_vars
 parse_envfile
 
 # Installs everything
-copy_libs "newrelic-php;3.1.5.137"
-install_libs "php;5.4.11 httpd;2.4.3"
-config_php
-config_httpd
-config_newrelic
+install_php_libs
+export_paths "php httpd"
 install_app
 
 # Writes control files
