@@ -4,7 +4,7 @@
 
 If you'd like to test this stack, have a look at the ClickStarts that implement it:
 
-####[Phpinfo](https://github.com/benjaminsavoy/phpinfo-clickstart)
+####[Wordpress](https://github.com/benjaminsavoy/wordpress-clickstart)
 
 ## About
 
