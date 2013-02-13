@@ -1,7 +1,9 @@
+#!/bin/bash
+
 set -u
 set -e
 
-. "$plugin_dir/php/functions"
+. "$plugin_dir/functions"
 
 # Creates the base of the app
 create_app_skel
@@ -10,8 +12,8 @@ parse_envfile
 
 # Installs everything
 install_libs \
-"php/lib/php-5.4.11;php \
-php/lib/httpd-2.4.3;httpd"
+"lib/php-5.4.11;php \
+lib/httpd-2.4.3;httpd"
 
 # Write configuration
 config_php

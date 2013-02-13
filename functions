@@ -1,0 +1,214 @@
+# -*-shell-script-*-
+
+. "$genapp_functions/core"
+
+config_file() {
+    echo "$control_dir/config"
+}
+
+create_app_skel() {
+    echo "Creating plugin directories in $app_dir"
+    chmod 770 "$app_dir"
+    mkdir -m 770 "$app_dir/tmp"
+    mkdir -m 750 "$app_dir/var"
+    mkdir -m 750 "$app_dir/app"
+    mkdir -m 750 "$app_dir/conf"
+    mkdir -m 750 "$app_dir/lib"
+    touch "$(config_file)"
+    chmod 640 "$(config_file)"
+}
+
+init_vars() {
+    _config="$(config_file)"
+    echo "Initializing system variables in $_config"
+
+    echo "Writing system variables to $_config"
+    echo "export HOME=$app_dir" >> "$_config"
+    echo "export TMPDIR=$app_dir/tmp" >> "$_config"
+}
+
+parse_envfile() {
+    _config="$(config_file)"
+    echo "Parsing env file into $_config"
+
+    echo "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH-""}" >> "$_config"
+
+    _databases=""
+    while read _line; do
+        # Remove first and last quote.
+        echo "export $(echo $_line | sed 's/="/=/;s/"[^"]*$//')" >> "$_config" 
+
+        if [[ "$_line" =~ ^MYSQL_URL ]]; then
+            _databases+=$(echo "$_line " | sed 's/="/=/;s/"[^"]*$//')
+        fi
+    done < "$control_dir/env"
+
+    echo "Parsing database URLs"
+    if [ -n "$_databases" ]; then
+        for _db in "$_databases"; do
+            _url=$(echo $_db | sed "s/MYSQL_URL_.*=//")
+            _db_name=$(echo $_url | sed "s/.*\///")
+
+            _host_regexp="s/mysql:\/\///;s/:[0-9]*\/${_db_name}//"
+            _db_host=$(echo $_url | sed "$_host_regexp")
+
+            _port_rexexp="s/mysql:\/\/$_db_host://;s/\/${_db_name}//"
+            _db_port=$(echo $_url | sed "$_port_rexexp")
+            _db_alias=$(echo $_db | sed "s/MYSQL_URL_//;s/=.*//")
+
+            echo "export MYSQL_HOST_${_db_alias}=${_db_host}" >> "$_config"
+            echo "export MYSQL_PORT_${_db_alias}=${_db_port}" >> "$_config"
+            echo "export MYSQL_DB_${_db_alias}=${_db_name}" >> "$_config"
+        done
+    fi
+}
+
+export_path() {
+    echo "Exporting paths for $1"
+    echo "export PATH=$app_dir/lib/$1/bin:\$PATH" >> "$(config_file)"
+    echo "export LD_LIBRARY_PATH=$app_dir/lib/$1/lib:\$LD_LIBRARY_PATH" >> "$(config_file)"
+}
+
+install_libs() {
+    for _lib in $1; do
+        echo "Installing $_lib"
+
+        _OIFS="$IFS"
+            IFS=';' read -ra _LIB <<< "$_lib"
+        IFS="$_OIFS"
+        _libpath="${_LIB[0]}"
+        _libname="${_LIB[1]}"
+
+        unzip -q "$plugin_dir/${_libpath}.zip" -d "$app_dir/lib/${_libname}"
+
+        echo "Rewriting ${_libname} permissions"
+        chmod -R g-w,o-rwx "$app_dir/lib/${_libname}"
+
+        export_path "$_libname"
+    done
+}
+
+config_php() {
+    echo "Configuring PHP"
+    _config="$(config_file)"
+    _phpini="$app_dir/conf/php.ini"
+
+    . "$_config"
+    _maxpost="${maxPost-""}"
+
+    mkdir -m 770 "$log_dir/php"
+    mkdir -m 770 "$app_dir/var/php"
+
+    install -m 640 "$plugin_dir/conf/php.ini" "$_phpini"
+
+    sed -i "2iapp_dir = \"$app_dir\"" "$_phpini"
+    sed -i "3ilog_dir = \"$log_dir\"" "$_phpini"
+
+    if [ -z "$_maxpost" ]; then
+        sed -i "4imax_post = 100K" "$_phpini"
+        sed -i "5ifile_uploads = Off" "$_phpini"
+    else
+        sed -i "4imax_post = ${_maxpost}M" "$_phpini"
+        sed -i "5ifile_uploads = On" "$_phpini"
+        sed -i "6imax_filesize = $_maxpost" "$_phpini"
+    fi
+    
+    # SMTP
+    _mailconf="$app_dir/conf/msmtp.conf"
+    _host="${SENDGRID_SMTP_HOST-"smtp.sendgrid.net"}"
+    _smtpuser="${SENDGRID_USERNAME-""}"
+    _smtppass="${SENDGRID_PASSWORD-""}"
+    install -m 640 "$plugin_dir/conf/msmtp.conf" "$_mailconf"
+    echo -e "\n# Stack Inserts" >> "$_mailconf"
+    echo "host $_host" >> "$_mailconf"
+    echo "user $_smtpuser" >> "$_mailconf"
+    echo "password $_smtppass" >> "$_mailconf"
+}
+
+config_httpd() {
+    echo "Configuring httpd"
+    ln -s "$app_dir/lib/php/lib/libphp5.so" "$app_dir/lib/httpd/modules/libphp5.so"
+    chmod -R 770 "$app_dir/lib/httpd/logs"
+    mkdir -m 770 "$log_dir/httpd"
+
+    . "$(config_file)"
+    _memsize=$(metadata cgroup_mem_limit)
+    _loglevel="${logLevel-"info"}"
+    _maxpost="${maxPost-""}"
+
+    case $_memsize in
+        "128M") _mult=1;;
+        "256M") _mult=2;;
+        "512M") _mult=4;;
+        "1024M") _mult=8;;
+        "2048M") _mult=16;;
+        "4096M") _mult=32;;
+    esac
+
+    _htconf="$app_dir/conf/httpd.conf"
+    install -m 640 "$plugin_dir/conf/httpd.conf" "$_htconf"
+
+    # A few additional files that get included for convenience
+    touch "$app_dir/conf/httpd.site.conf" \
+    "$app_dir/conf/httpd.head.conf" "$app_dir/conf/httpd.tail.conf"
+    chmod 640 "$app_dir/conf/httpd.site.conf" \
+    "$app_dir/conf/httpd.head.conf" "$app_dir/conf/httpd.tail.conf"
+
+    sed -i "2i## Base configuration" "$_htconf"
+    sed -i "3iServerRoot \"${app_dir}/lib/httpd\"" "$_htconf"
+    sed -i "4iListen $app_port" "$_htconf"
+    sed -i "5iInclude \"$app_dir/conf/httpd.head.conf\"" "$_htconf"
+
+    echo -e "\n## Upload limitations" >> "$_htconf"
+    if [ -z "$_maxpost" ]; then
+        echo "LimitRequestBody 102400" >> "$_htconf"
+    else
+        echo "LimitRequestBody $(($_maxpost*1024*1024))" >> "$_htconf"
+    fi
+
+    echo -e "\n## PHP Configuration" >> "$_htconf"
+    echo "PHPIniDir \"$app_dir/conf\"" >> "$_htconf"
+
+    echo -e "\n## Website files" >> "$_htconf"
+    echo "DocumentRoot \"$app_dir/app\"" >> "$_htconf"
+    echo "<Directory \"$app_dir/app>\"" >> "$_htconf"
+    echo "    Options none" >> "$_htconf"
+    echo "    AllowOverride none" >> "$_htconf"
+    echo "    Require all granted" >> "$_htconf"
+    echo "    Include \"$app_dir/conf/httpd.site.conf\"" >> "$_htconf"
+    echo "</Directory>" >> "$_htconf" 
+
+    echo -e "\n## Resource limitations" >> "$_htconf"
+    echo "MaxClients $((5*$_mult))" >> "$_htconf"
+    echo "ServerLimit $((5*$_mult))" >> "$_htconf"
+    echo "StartServers $_mult" >> "$_htconf"
+    echo "MinSpareServers $_mult" >> "$_htconf"
+    echo "MaxSpareServers $((2*$_mult))" >> "$_htconf"
+
+    echo -e "\n## Logging" >> "$_htconf"
+    echo "ErrorLog \"|/usr/bin/tee $log_dir/httpd/error.log\"" >> "$_htconf"
+    echo "LogLevel $_loglevel" >> "$_htconf"
+
+    echo -e "\nInclude \"$app_dir/conf/httpd.tail.conf\"" >> "$_htconf"
+}
+
+install_app() {
+    echo "Copying application files to $app_dir/app"
+
+    cp -a $pkg_dir/* "$app_dir/app/"
+
+    if [ -d "$pkg_dir/.conf" ]; then
+        echo "Found .conf dir, copying config files"
+        install -m 640 $pkg_dir/.conf/httpd.*.conf "$app_dir/conf/"
+    fi
+    
+    chmod -R g-w,o-rwx "$app_dir/app"
+}
+
+write_control() {
+    echo "Writing control scripts to $control_dir"
+
+    install -m 550 "$plugin_dir/control/restart" "$control_dir"
+    install -m 550 "$plugin_dir/control/start" "$control_dir"
+    install -m 550 "$plugin_dir/control/stop" "$control_dir"
+}

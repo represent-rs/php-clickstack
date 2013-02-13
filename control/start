@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+set -u
+
+control_dir="$(dirname $0)"
+. "$control_dir/config"
+
+install -m 600 "$app_dir/conf/msmtp.conf" "$app_dir/.msmtprc"
+cat "$app_dir/.genapp/setup_status/plugin_"*
+
+echo "Starting apache web server"
+exec bash -c "httpd -k start -f $app_dir/conf/httpd.conf -D FOREGROUND"
