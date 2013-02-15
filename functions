@@ -194,7 +194,7 @@ install_app() {
 write_control() {
     echo "Writing control scripts to $control_dir"
 
-    install -m 750 "$plugin_dir/control/restart" "$control_dir"
-    install -m 750 "$plugin_dir/control/start" "$control_dir"
-    install -m 750 "$plugin_dir/control/stop" "$control_dir"
+    install -m 550 "$plugin_dir/control/restart" "$control_dir"
+    install -m 550 "$plugin_dir/control/start" "$control_dir"
+    install -m 550 "$plugin_dir/control/stop" "$control_dir"
 }
