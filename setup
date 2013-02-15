@@ -14,7 +14,6 @@ parse_envfile
 install_lib "lib/php-5.4.11;php"
 install_lib "lib/httpd-2.4.3;httpd"
 install_lib "lib/mysql-c-6.0.2;mysql"
-install_lib "lib/msmtp-1.4.30;msmtp"
 
 # Write configuration
 config_php
