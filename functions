@@ -25,13 +25,12 @@ init_vars() {
     echo "Writing system variables to $_config"
     echo "export HOME=$app_dir" >> "$_config"
     echo "export TMPDIR=$app_dir/tmp" >> "$_config"
+    echo "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH-""}" >> "$_config"
 }
 
 parse_envfile() {
     _config="$(config_file)"
     echo "Parsing env file into $_config"
-
-    echo "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH-""}" >> "$_config"
 
     _databases=""
     while read _line; do
@@ -69,23 +68,21 @@ export_path() {
     echo "export LD_LIBRARY_PATH=$app_dir/lib/$1/lib:\$LD_LIBRARY_PATH" >> "$(config_file)"
 }
 
-install_libs() {
-    for _lib in $1; do
-        echo "Installing $_lib"
+install_lib() {
+    echo "Installing $1"
 
-        _OIFS="$IFS"
-            IFS=';' read -ra _LIB <<< "$_lib"
-        IFS="$_OIFS"
-        _libpath="${_LIB[0]}"
-        _libname="${_LIB[1]}"
+    _OIFS="$IFS"
+    IFS=';' read -ra _LIB <<< "$1"
+    IFS="$_OIFS"
+    _libpath="${_LIB[0]}"
+    _libname="${_LIB[1]}"
 
-        unzip -q "$plugin_dir/${_libpath}.zip" -d "$app_dir/lib/${_libname}"
+    unzip -q "$plugin_dir/${_libpath}.zip" -d "$app_dir/lib/${_libname}"
 
-        echo "Rewriting ${_libname} permissions"
-        chmod -R g-w,o-rwx "$app_dir/lib/${_libname}"
+    echo "Rewriting ${_libname} permissions"
+    chmod -R g-w,o-rwx "$app_dir/lib/${_libname}"
 
-        export_path "$_libname"
-    done
+    export_path "$_libname"
 }
 
 config_php() {
