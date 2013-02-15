@@ -109,17 +109,6 @@ config_php() {
         sed -i "5ifile_uploads = On" "$_phpini"
         sed -i "6imax_filesize = $_maxpost" "$_phpini"
     fi
-    
-    # SMTP
-    _mailconf="$app_dir/conf/msmtp.conf"
-    _host="${SENDGRID_SMTP_HOST-"smtp.sendgrid.net"}"
-    _smtpuser="${SENDGRID_USERNAME-""}"
-    _smtppass="${SENDGRID_PASSWORD-""}"
-    install -m 640 "$plugin_dir/conf/msmtp.conf" "$_mailconf"
-    echo -e "\n# Stack Inserts" >> "$_mailconf"
-    echo "host $_host" >> "$_mailconf"
-    echo "user $_smtpuser" >> "$_mailconf"
-    echo "password $_smtppass" >> "$_mailconf"
 }
 
 config_httpd() {
@@ -205,7 +194,7 @@ install_app() {
 write_control() {
     echo "Writing control scripts to $control_dir"
 
-    install -m 550 "$plugin_dir/control/restart" "$control_dir"
-    install -m 550 "$plugin_dir/control/start" "$control_dir"
-    install -m 550 "$plugin_dir/control/stop" "$control_dir"
+    install -m 750 "$plugin_dir/control/restart" "$control_dir"
+    install -m 750 "$plugin_dir/control/start" "$control_dir"
+    install -m 750 "$plugin_dir/control/stop" "$control_dir"
 }

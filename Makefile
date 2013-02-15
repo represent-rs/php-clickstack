@@ -47,8 +47,7 @@ publish_url = s3://$(publish_bucket)/$(publish_repo)/
 # or other dependencies used by the plugin. Otherwise this value may be
 # left blank.
 
-deps = lib/php-5.4.11.zip lib/httpd-2.4.3.zip \
-lib/mysql-c-6.0.2.zip lib/msmtp-1.4.30.zip
+deps = lib/php-5.4.11.zip lib/httpd-2.4.3.zip lib/mysql-c-6.0.2.zip
 
 # == pkg_files (required)
 #
@@ -58,7 +57,7 @@ lib/mysql-c-6.0.2.zip lib/msmtp-1.4.30.zip
 # Directories that are specified in pkg_files are always copied recursively
 # in their entirety.
 
-pkg_files = README.md LICENSE conf control lib setup functions 
+pkg_files = README.md LICENSE conf control lib setup functions
 
 # = Core makefile support
 #
