@@ -4,7 +4,7 @@
 
 If you'd like to test this stack, have a look at the ClickStarts that implement it:
 
-####[Wordpress](https://github.com/benjaminsavoy/wordpress-clickstart)
+####[Wordpress](https://github.com/cloudbees-community/wordpress-clickstart)
 
 ## About
 
@@ -20,7 +20,7 @@ It's that easy!
 
 ## Implementations
 
-###[Drupal](https://github.com/benjaminsavoy/drupal-clickstack)
+###[Drupal](https://github.com/cloudbees-community/drupal-clickstack)
 
 ## Features
 
