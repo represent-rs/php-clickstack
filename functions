@@ -25,6 +25,7 @@ init_vars() {
     echo "Writing system variables to $_config"
     echo "export HOME=$app_dir" >> "$_config"
     echo "export TMPDIR=$app_dir/tmp" >> "$_config"
+    echo "export log_dir=$log_dir" >> "$_config"
     echo "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH-""}" >> "$_config"
 }
 
@@ -99,15 +100,14 @@ config_php() {
     install -m 640 "$plugin_dir/conf/php.ini" "$_phpini"
 
     sed -i "2iapp_dir = \"$app_dir\"" "$_phpini"
-    sed -i "3ilog_dir = \"$log_dir\"" "$_phpini"
 
     if [ -z "$_maxpost" ]; then
-        sed -i "4imax_post = 100K" "$_phpini"
-        sed -i "5ifile_uploads = Off" "$_phpini"
+        sed -i "3imax_post = 100K" "$_phpini"
+        sed -i "4ifile_uploads = Off" "$_phpini"
     else
-        sed -i "4imax_post = ${_maxpost}M" "$_phpini"
-        sed -i "5ifile_uploads = On" "$_phpini"
-        sed -i "6imax_filesize = $_maxpost" "$_phpini"
+        sed -i "3imax_post = ${_maxpost}M" "$_phpini"
+        sed -i "4ifile_uploads = On" "$_phpini"
+        sed -i "5imax_filesize = $_maxpost" "$_phpini"
     fi
 }
 
@@ -145,37 +145,41 @@ config_httpd() {
     sed -i "4iListen $app_port" "$_htconf"
     sed -i "5iInclude \"$app_dir/conf/httpd.head.conf\"" "$_htconf"
 
-    echo -e "\n## Upload limitations" >> "$_htconf"
     if [ -z "$_maxpost" ]; then
-        echo "LimitRequestBody 102400" >> "$_htconf"
+        _maxbytes=102400
     else
-        echo "LimitRequestBody $(($_maxpost*1024*1024))" >> "$_htconf"
+        _maxbytes=$(($_maxpost*1024*1024))
     fi
 
-    echo -e "\n## PHP Configuration" >> "$_htconf"
-    echo "PHPIniDir \"$app_dir/conf\"" >> "$_htconf"
+    cat >> $_htconf <<EOF
 
-    echo -e "\n## Website files" >> "$_htconf"
-    echo "DocumentRoot \"$app_dir/app\"" >> "$_htconf"
-    echo "<Directory \"$app_dir/app>\"" >> "$_htconf"
-    echo "    Options none" >> "$_htconf"
-    echo "    AllowOverride none" >> "$_htconf"
-    echo "    Require all granted" >> "$_htconf"
-    echo "    Include \"$app_dir/conf/httpd.site.conf\"" >> "$_htconf"
-    echo "</Directory>" >> "$_htconf" 
+## Upload limitations
+LimitRequestBody $_maxbytes
 
-    echo -e "\n## Resource limitations" >> "$_htconf"
-    echo "MaxClients $((5*$_mult))" >> "$_htconf"
-    echo "ServerLimit $((5*$_mult))" >> "$_htconf"
-    echo "StartServers $_mult" >> "$_htconf"
-    echo "MinSpareServers $_mult" >> "$_htconf"
-    echo "MaxSpareServers $((2*$_mult))" >> "$_htconf"
+## PHP Configuration
+PHPIniDir "$app_dir/conf"
 
-    echo -e "\n## Logging" >> "$_htconf"
-    echo "ErrorLog \"|/usr/bin/tee $log_dir/httpd/error.log\"" >> "$_htconf"
-    echo "LogLevel $_loglevel" >> "$_htconf"
+## Website files"
+DocumentRoot "$app_dir/app"
+<Directory "$app_dir/app">
+    Options none
+    AllowOverride none
+    Require all granted
+    Include "$app_dir/conf/httpd.site.conf"
+</Directory>
 
-    echo -e "\nInclude \"$app_dir/conf/httpd.tail.conf\"" >> "$_htconf"
+MaxClients $((5*$_mult))
+ServerLimit $((5*$_mult))
+StartServers $_mult
+MinSpareServers $_mult
+MaxSpareServers $((2*$_mult))
+
+## Logging
+ErrorLog "|$(which tee) $log_dir/httpd/error.log"
+LogLevel $_loglevel
+
+Include "$app_dir/conf/httpd.tail.conf"
+EOF
 }
 
 install_app() {
@@ -194,7 +198,6 @@ install_app() {
 write_control() {
     echo "Writing control scripts to $control_dir"
 
-    install -m 550 "$plugin_dir/control/restart" "$control_dir"
     install -m 550 "$plugin_dir/control/start" "$control_dir"
     install -m 550 "$plugin_dir/control/stop" "$control_dir"
 }

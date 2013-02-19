@@ -72,13 +72,6 @@ This might be useful if you want to write security directives for mod_security, 
     
 Simply activate NewRelic in the CloudBees application configuration tab.
 
-#### Restart and stop functions
-
-If your instance doesn't respond anymore or if Apache is in a bad state,
-you can try issuing an apache restart (or respectively stop) with:
-
-    app:instance:invoke MY_APP -cs restart -i INSTANCE_ID
-
 #### PHP Mail function
 
 This stack supports the PHP mail() function which goes through our partner SendGrid.
