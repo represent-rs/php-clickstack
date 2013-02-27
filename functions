@@ -6,6 +6,10 @@ config_file() {
     echo "$control_dir/config"
 }
 
+httpd_confs() {
+    echo "head site tail"
+}
+
 create_app_skel() {
     echo "Creating plugin directories in $app_dir"
     chmod 770 "$app_dir"
@@ -26,7 +30,7 @@ init_vars() {
     echo "export HOME=$app_dir" >> "$_config"
     echo "export TMPDIR=$app_dir/tmp" >> "$_config"
     echo "export log_dir=$log_dir" >> "$_config"
-    echo "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH-""}" >> "$_config"
+    echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH-""}" >> "$_config"
 }
 
 parse_envfile() {
@@ -66,7 +70,8 @@ parse_envfile() {
 export_path() {
     echo "Exporting paths for $1"
     echo "export PATH=$app_dir/lib/$1/bin:\$PATH" >> "$(config_file)"
-    echo "export LD_LIBRARY_PATH=$app_dir/lib/$1/lib:\$LD_LIBRARY_PATH" >> "$(config_file)"
+    echo "export LD_LIBRARY_PATH=$app_dir/lib/$1/lib:\$LD_LIBRARY_PATH" >> \
+         "$(config_file)"
 }
 
 install_lib() {
@@ -113,7 +118,8 @@ config_php() {
 
 config_httpd() {
     echo "Configuring httpd"
-    ln -s "$app_dir/lib/php/lib/libphp5.so" "$app_dir/lib/httpd/modules/libphp5.so"
+    ln -s "$app_dir/lib/php/lib/libphp5.so" \
+          "$app_dir/lib/httpd/modules/libphp5.so"
     chmod -R 770 "$app_dir/lib/httpd/logs"
     mkdir -m 770 "$log_dir/httpd"
 
@@ -122,7 +128,7 @@ config_httpd() {
     _loglevel="${logLevel-"info"}"
     _maxpost="${maxPost-""}"
 
-    case $_memsize in
+    case "$_memsize" in
         "128M") _mult=1;;
         "256M") _mult=2;;
         "512M") _mult=4;;
@@ -134,11 +140,10 @@ config_httpd() {
     _htconf="$app_dir/conf/httpd.conf"
     install -m 640 "$plugin_dir/conf/httpd.conf" "$_htconf"
 
-    # A few additional files that get included for convenience
-    touch "$app_dir/conf/httpd.site.conf" \
-    "$app_dir/conf/httpd.head.conf" "$app_dir/conf/httpd.tail.conf"
-    chmod 640 "$app_dir/conf/httpd.site.conf" \
-    "$app_dir/conf/httpd.head.conf" "$app_dir/conf/httpd.tail.conf"
+    for _file in $(httpd_confs); do
+        touch "$app_dir/conf/httpd.${_file}.conf"
+        chmod 640 "$app_dir/conf/httpd.${_file}.conf"
+    done
 
     sed -i "2i## Base configuration" "$_htconf"
     sed -i "3iServerRoot \"${app_dir}/lib/httpd\"" "$_htconf"
@@ -146,15 +151,15 @@ config_httpd() {
     sed -i "5iInclude \"$app_dir/conf/httpd.head.conf\"" "$_htconf"
 
     if [ -z "$_maxpost" ]; then
-        _maxbytes=102400
+        _maxbytes="102400"
     else
         _maxbytes=$(($_maxpost*1024*1024))
     fi
 
-    cat >> $_htconf <<EOF
+    cat >> "$_htconf" <<EOF
 
 ## Upload limitations
-LimitRequestBody $_maxbytes
+LimitRequestBody "$_maxbytes"
 
 ## PHP Configuration
 PHPIniDir "$app_dir/conf"
@@ -168,15 +173,15 @@ DocumentRoot "$app_dir/app"
     Include "$app_dir/conf/httpd.site.conf"
 </Directory>
 
-MaxClients $((5*$_mult))
-ServerLimit $((5*$_mult))
-StartServers $_mult
-MinSpareServers $_mult
-MaxSpareServers $((2*$_mult))
+MaxClients "$((5*$_mult))"
+ServerLimit "$((5*$_mult))"
+StartServers "$_mult"
+MinSpareServers "$_mult"
+MaxSpareServers "$((2*$_mult))"
 
 ## Logging
 ErrorLog "|$(which tee) $log_dir/httpd/error.log"
-LogLevel $_loglevel
+LogLevel "$_loglevel"
 
 Include "$app_dir/conf/httpd.tail.conf"
 EOF
@@ -185,11 +190,15 @@ EOF
 install_app() {
     echo "Copying application files to $app_dir/app"
 
-    cp -a $pkg_dir/* "$app_dir/app/"
+    cp -a "$pkg_dir/"* "$app_dir/app/"
 
     if [ -d "$pkg_dir/.conf" ]; then
         echo "Found .conf dir, copying config files"
-        install -m 640 $pkg_dir/.conf/httpd.*.conf "$app_dir/conf/"
+        for _file in $(httpd_confs); do
+            cat "$pkg_dir/.conf/httpd.${_file}.conf" >> \
+                "$app_dir/conf/httpd.${_file}.conf"
+        done
+        cat "$pkg_dir/.conf/php.ini" >> "$app_dir/conf/php.tail.ini"
     fi
     
     chmod -R g-w,o-rwx "$app_dir/app"
