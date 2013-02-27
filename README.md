@@ -61,7 +61,7 @@ To override the configuration files, create a .conf directory in your applicatio
 
     # Include after the ServerRoot and Bind directives, but before anything else.
     httpd.head.conf 
-    # Include in the site's Directory directive
+    # Include in the site's Directory directive (Like .htaccess)
     httpd.site.conf
     # Include at the end of the file
     httpd.tail.conf
@@ -72,9 +72,13 @@ This might be useful if you want to write security directives for mod_security, 
     
 Simply activate NewRelic in the CloudBees application configuration tab.
 
+[Source code](https://github.com/cloudbees-community/newrelic-php-clickstack)
+
 #### PHP Mail function
 
-This stack supports the PHP mail() function which goes through our partner SendGrid.
+This stack supports the PHP mail() function which goes through our partner SendGrid. Simply subscribe to SendGrid to profit from this functionality
+
+[Source code](https://github.com/cloudbees-community/sendgrid-php-clickstack)
 
 ## Included packages
 
