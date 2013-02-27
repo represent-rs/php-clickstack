@@ -11,8 +11,8 @@ init_vars
 parse_envfile
 
 # Installs everything
-install_lib "lib/php-5.4.11;php"
-install_lib "lib/httpd-2.4.3;httpd"
+install_lib "lib/php-5.4.12;php"
+install_lib "lib/httpd-2.4.4;httpd"
 install_lib "lib/mysql-c-6.0.2;mysql"
 
 # Write configuration
