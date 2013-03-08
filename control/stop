@@ -4,7 +4,7 @@ set -e
 set -u
 
 control_dir="$(dirname $0)"
-. "$control_dir/config"
+while read _var ; do export $_var ; done < "$control_dir/config"
 
 echo "Stopping apache gracefully"
 exec bash -c "httpd -k graceful-stop -f $app_dir/conf/httpd.conf -D FOREGROUND"

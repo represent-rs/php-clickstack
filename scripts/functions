@@ -1,0 +1,177 @@
+# -*-shell-script-*-
+
+. "$genapp_functions/core"
+
+config="$control_dir/config"
+confs="head site tail"
+
+parse() {
+    echo $(python $plugin_dir/lib/parser/parser.py $@)
+}
+
+create_app_skel() {
+    echo "Creating plugin directories in $app_dir"
+    chmod 770 "$app_dir"
+    mkdir -m 770 "$app_dir/tmp"
+    mkdir -m 750 "$app_dir/var"
+    mkdir -m 750 "$app_dir/app"
+    mkdir -m 750 "$app_dir/conf"
+    mkdir -m 750 "$app_dir/lib"
+    touch "$config"
+    chmod 640 "$config"
+}
+
+init_vars() {
+    echo "Initializing system variables in $config"
+
+    echo "Writing system variables to $config"
+    echo "export HOME=$app_dir" >> "$config"
+    echo "export TMPDIR=$app_dir/tmp" >> "$config"
+    echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH-""}" >> "$config"
+    echo "export log_dir=$log_dir" >> "$config"
+    echo "export app_dir=$app_dir" >> "$config"
+    echo "export app_port=$app_port" >> "$config"
+    echo "export debug=$(parse env debug -d false)" >> "$config"
+}
+
+parse_databases() {
+    echo "Parsing database URLs"
+    for _db in $(parse resources database); do
+        _db_user=$(parse resources database $_db config DATABASE_USERNAME)
+        _db_pass=$(parse resources database $_db config DATABASE_PASSWORD)
+        _db_host=$(parse resources database $_db config DATABASE_HOST)
+        _db_port=$(parse resources database $_db config DATABASE_PORT)
+        _db_name=$(parse resources database $_db config DATABASE_DB)
+
+        _db=$(echo $_db | tr '[:lower:]' '[:upper:]')
+        echo "export MYSQL_HOST_${_db}=${_db_host}" >> "$config"
+        echo "export MYSQL_PORT_${_db}=${_db_port}" >> "$config"
+        echo "export MYSQL_DB_${_db}=${_db_name}" >> "$config"
+        echo "export MYSQL_USERNAME_${_db}=${_db_user}" >> "$config"
+        echo "export MYSQL_PASSWORD_${_db}=${_db_pass}" >> "$config"
+    done
+}
+
+export_path() {
+    echo "Exporting paths for $1"
+    echo "export PATH=$app_dir/lib/$1/bin:\$PATH" >> "$config"
+    echo "export LD_LIBRARY_PATH=$app_dir/lib/$1/lib:\$LD_LIBRARY_PATH" >> \
+         "$config"
+}
+
+install_lib() {
+    echo "Installing $1"
+
+    unzip -q "$plugin_dir/lib/$1.zip" -d "$app_dir/lib/$1"
+
+    echo "Rewriting $1 permissions"
+    chmod -R g-w,o-rwx "$app_dir/lib/$1"
+
+    export_path "$1"
+}
+
+install_libs() {
+    for _lib in $1; do
+        install_lib "$_lib"
+    done
+}
+
+config_php() {
+    echo "Configuring PHP"
+    _phpini="$app_dir/conf/php.ini"
+    _maxpost=$(parse env maxPost -d unset)
+
+    mkdir -m 770 "$log_dir/php"
+    mkdir -m 770 "$app_dir/var/php"
+
+    install -m 640 "$plugin_dir/conf/php.ini" "$_phpini"
+
+    _subs="s@{{app_dir}}@$app_dir@g"
+    _subs+=";s@{{log_dir}}@$log_dir@g"
+
+    if [[ "$_maxpost" == "unset" ]]; then
+        _subs+=";s@{{max_post}}@100K@g"
+        echo "file_uploads = Off" >> "$_phpini"
+    else
+        _subs+=";s@{{max_post}}@${_maxpost}M@g"
+        echo "file_uploads = On" >> "$_phpini"
+    fi
+
+    sed -i "$_subs" "$_phpini"
+}
+
+config_httpd() {
+    echo "Configuring httpd"
+    ln -s "$app_dir/lib/php/lib/libphp5.so" \
+          "$app_dir/lib/httpd/modules/libphp5.so"
+    chmod -R 770 "$app_dir/lib/httpd/logs"
+    mkdir -m 770 "$log_dir/httpd"
+
+    _htconf="$app_dir/conf/httpd.conf"
+    install -m 640 "$plugin_dir/conf/httpd.conf" "$_htconf"
+
+    for _file in $confs; do
+        touch "$app_dir/conf/httpd.${_file}.conf"
+        chmod 640 "$app_dir/conf/httpd.${_file}.conf"
+    done
+
+    _memsize=$(parse cgroup mem_limit)
+    _maxpost=$(parse env maxPost -d unset)
+
+    if [[ $(parse env debug -d false) == "true" ]]; then  
+        _loglevel="debug"
+    else
+        _loglevel=$(parse env logLevel -d info)
+    fi
+
+    case "$_memsize" in
+        "128M") _mult=1;;
+        "256M") _mult=2;;
+        "512M") _mult=4;;
+        "1024M") _mult=8;;
+        "2048M") _mult=16;;
+        "4096M") _mult=32;;
+    esac
+    
+    if [[ "$_maxpost" == "unset" ]]; then
+        _maxbytes=102400
+    else   
+        _maxbytes=$(($_maxpost*1024*1024))
+    fi
+
+    _subs="s@{{app_dir}}@$app_dir@g"
+    _subs+=";s@{{app_port}}@$app_port@g"
+
+    _subs+=";s@{{log_dir}}@$log_dir@g"
+    _subs+=";s@{{loglevel}}@$_loglevel@g"
+    _subs+=";s@{{tee}}@$(which tee)@g"
+
+    _subs+=";s@{{maxbytes}}@$_maxbytes@g"
+    _subs+=";s@{{mult5}}@$(($_mult*5))@g"
+    _subs+=";s@{{mult2}}@$(($_mult*2))@g"
+    _subs+=";s@{{mult}}@$_mult@g"
+
+    sed -i "$_subs" "$_htconf"
+}
+
+install_app() {
+    echo "Copying application files to $app_dir/app"
+
+    cp -a "$pkg_dir/"* "$app_dir/app/"
+
+    if [ -d "$pkg_dir/.conf" ]; then
+        echo "Found .conf dir, copying config files"
+        for _file in $pkg_dir/.conf/*; do
+            cat "$_file" >> "$app_dir/conf/$(basename $_file)"
+        done
+    fi
+    
+    chmod -R g-w,o-rwx "$app_dir/app"
+}
+
+write_control() {
+    echo "Writing control scripts to $control_dir"
+    for _file in $plugin_dir/control/*; do
+        install -m 550 "$_file" "$control_dir/$(basename $_file)"
+    done
+}

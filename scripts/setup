@@ -8,12 +8,10 @@ set -e
 # Creates the base of the app
 create_app_skel
 init_vars
-parse_envfile
+parse_databases
 
 # Installs everything
-install_lib "lib/php-5.4.12;php"
-install_lib "lib/httpd-2.4.4;httpd"
-install_lib "lib/mysql-c-6.0.2;mysql"
+install_libs "httpd php mysql-c"
 
 # Write configuration
 config_php
