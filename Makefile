@@ -11,7 +11,7 @@ lib/mysql-c.zip = mysql-c-6.0.2.zip
 
 deps = lib lib/php.zip lib/httpd.zip lib/mysql-c.zip lib/parser
 
-pkg_files = README.md LICENSE conf control lib scripts/*
+pkg_files = README.md LICENSE conf control lib setup functions
 
 include plugin.mk
 
