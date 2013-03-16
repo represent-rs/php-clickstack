@@ -13,9 +13,7 @@ This stack simply serves your PHP and other files with Apache.
 
 To deploy, just zip your files and deploy them with:
 
-    bees app:deploy -a MY_APP -t php \
-    -RPLUGIN.SRC.php=http://cloudbees-clickstack.s3.amazonaws.com/community/php-plugin.zip \
-    files.zip
+    bees app:deploy -a MY_APP -t php files.zip
 
 It's that easy!
 
