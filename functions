@@ -3,7 +3,6 @@
 . "$genapp_functions/core"
 
 config="$control_dir/config"
-confs="head site tail"
 
 parse() {
     echo $(python $plugin_dir/lib/parser/parser.py $@)
@@ -83,6 +82,7 @@ config_php() {
 
     mkdir -m 770 "$log_dir/php"
     mkdir -m 770 "$app_dir/var/php"
+    touch "$log_dir/php/error.log"
 
     install -m 640 "$plugin_dir/conf/php.ini" "$_phpini"
 
@@ -106,11 +106,12 @@ config_httpd() {
           "$app_dir/lib/httpd/modules/libphp5.so"
     chmod -R 770 "$app_dir/lib/httpd/logs"
     mkdir -m 770 "$log_dir/httpd"
+    touch "$log_dir/httpd/error.log"
 
     _htconf="$app_dir/conf/httpd.conf"
     install -m 640 "$plugin_dir/conf/httpd.conf" "$_htconf"
 
-    for _file in $confs; do
+    for _file in head site tail; do
         touch "$app_dir/conf/httpd.${_file}.conf"
         chmod 640 "$app_dir/conf/httpd.${_file}.conf"
     done

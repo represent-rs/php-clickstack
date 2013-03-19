@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -e
+set -u
+
+control_dir="$(dirname $0)"
+. "$control_dir/config"
+echo -e "\n##### BEGIN LOGS #####"
+for _file in php/error.log httpd/error.log; do
+    echo -e "\n----- Begin $_file -----"
+    cat "$log_dir/$_file"
+    echo -e "\n----- End $_file -----"
+done
+echo -e "\n##### END LOGS #####"
