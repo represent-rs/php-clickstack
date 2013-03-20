@@ -82,9 +82,9 @@ Typical uses:
 - httpd.head.conf: Load additional Apache modules. This file is included after
 the apache modules are loaded.
 - httpd.site.conf: Re-using your .htaccess configuration directives. This
-file is included at the end of 
+file is included at the end of the site directive.
 - httpd.tail.conf: Specify or override Apache httpd configuration directives.
-This file is included.
+This file is included at the end of the configuration.
 
 This might be useful if you want to write security directives for mod_security, 
 or otherwise re-use an existing .htaccess configuration file, which would have 

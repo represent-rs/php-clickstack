@@ -6,9 +6,5 @@ set -u
 control_dir="$(dirname $0)"
 . "$control_dir/config"
 
-for _pid in $(cat $control_dir/.pids); do
-	kill -9 "$_pid"
-done
-
 echo "Stopping apache gracefully"
 exec bash -c "httpd -k graceful-stop -f $app_dir/conf/httpd.conf -D FOREGROUND"

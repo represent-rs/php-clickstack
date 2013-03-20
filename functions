@@ -16,8 +16,6 @@ create_app_skel() {
     mkdir -m 750 "$app_dir/app"
     mkdir -m 750 "$app_dir/conf"
     mkdir -m 750 "$app_dir/lib"
-    touch "$config"
-    chmod 640 "$config"
 }
 
 init_vars() {
@@ -82,7 +80,6 @@ config_php() {
 
     mkdir -m 770 "$log_dir/php"
     mkdir -m 770 "$app_dir/var/php"
-    touch "$log_dir/php/error.log"
 
     install -m 640 "$plugin_dir/conf/php.ini" "$_phpini"
 
@@ -106,7 +103,6 @@ config_httpd() {
           "$app_dir/lib/httpd/modules/libphp5.so"
     chmod -R 770 "$app_dir/lib/httpd/logs"
     mkdir -m 770 "$log_dir/httpd"
-    touch "$log_dir/httpd/error.log"
 
     _htconf="$app_dir/conf/httpd.conf"
     install -m 640 "$plugin_dir/conf/httpd.conf" "$_htconf"

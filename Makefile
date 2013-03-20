@@ -5,7 +5,7 @@ publish_repo = testing
 publish_url = s3://$(publish_bucket)/$(publish_repo)/
 
 # Versions
-lib/php.zip = php-5.4.12.zip
+lib/php.zip = php-5.4.13.zip
 lib/httpd.zip = httpd-2.4.4.zip
 lib/mysql-c.zip = mysql-c-6.0.2.zip
 
@@ -24,5 +24,5 @@ lib:
 lib/parser:
 	git clone $(parser_repo) lib/parser
 
-lib/%:
+lib/%.zip:
 	wget -qO $@ $(base_url)/$($@)
