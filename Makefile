@@ -23,6 +23,7 @@ lib:
 
 lib/parser:
 	git clone $(parser_repo) lib/parser
+	rm -rf lib/parser/.git*
 
 lib/%.zip:
 	wget -qO $@ $(base_url)/$($@)
