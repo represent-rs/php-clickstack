@@ -20,7 +20,6 @@ create_app_skel() {
 
 init_vars() {
     echo "Initializing system variables in $config"
-
     echo "Writing system variables to $config"
     echo "export HOME=$app_dir" >> "$config"
     echo "export TMPDIR=$app_dir/tmp" >> "$config"
@@ -28,7 +27,7 @@ init_vars() {
     echo "export log_dir=$log_dir" >> "$config"
     echo "export app_dir=$app_dir" >> "$config"
     echo "export app_port=$app_port" >> "$config"
-    echo "export debug=$(parse env debug -d false)" >> "$config"
+    echo "export debug=$(metadata env_debug)" >> "$config"
 }
 
 parse_databases() {
@@ -76,7 +75,7 @@ install_libs() {
 config_php() {
     echo "Configuring PHP"
     _phpini="$app_dir/conf/php.ini"
-    _maxpost=$(parse env maxPost -d unset)
+    _maxpost=$(metadata env_maxpost unset)
 
     mkdir -m 770 "$log_dir/php"
     mkdir -m 770 "$app_dir/var/php"
@@ -112,13 +111,13 @@ config_httpd() {
         chmod 640 "$app_dir/conf/httpd.${_file}.conf"
     done
 
-    _memsize=$(parse cgroup mem_limit)
-    _maxpost=$(parse env maxPost -d unset)
+    _memsize=$(metadata cgroup_mem_limit)
+    _maxpost=$(metadata env_maxpost unset)
 
-    if [[ $(parse env debug -d false) == "true" ]]; then  
+    if [[ $(metadata env_debug false) == "true" ]]; then  
         _loglevel="debug"
     else
-        _loglevel=$(parse env logLevel -d info)
+        _loglevel=$(metadata env_loglevel info)
     fi
 
     case "$_memsize" in
