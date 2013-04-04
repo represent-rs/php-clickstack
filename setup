@@ -6,6 +6,7 @@ set -e
 . "$plugin_dir/functions"
 
 # Creates the base of the app
+load_env
 create_app_skel
 init_vars
 parse_databases
