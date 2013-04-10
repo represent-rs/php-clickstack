@@ -9,7 +9,7 @@ lib/php.zip = php-5.4.13.zip
 lib/httpd.zip = httpd-2.4.4.zip
 lib/mysql-c.zip = mysql-c-6.0.2.zip
 
-deps = lib lib/php.zip lib/httpd.zip lib/mysql-c.zip lib/parser
+deps = lib lib/php.zip lib/httpd.zip lib/mysql-c.zip
 
 pkg_files = README.md LICENSE conf control lib setup functions
 
@@ -20,10 +20,6 @@ parser_repo = git://github.com/benjaminsavoy/genapp-metadata-parser.git
 
 lib:
 	mkdir -p lib
-
-lib/parser:
-	git clone $(parser_repo) lib/parser
-	rm -rf lib/parser/.git*
 
 lib/%.zip:
 	wget -qO $@ $(base_url)/$($@)

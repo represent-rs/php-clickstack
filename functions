@@ -4,10 +4,6 @@
 
 config="$control_dir/config"
 
-parse() {
-    echo $(python $plugin_dir/lib/parser/parser.py $@)
-}
-
 load_env() {
     echo "Initializing user-defined parameters"
 
@@ -46,26 +42,37 @@ init_vars() {
 }
 
 parse_databases() {
-    echo "Parsing database URIs"
-    _databases="$(parse resources database -d __none__)"
-    if [[ "$_databases" != "__none__" ]]; then
-        for _db in $_databases; do
-            _db_user=$(parse resources database $_db config DATABASE_USERNAME)
-            _db_pass=$(parse resources database $_db config DATABASE_PASSWORD)
-            _db_host=$(parse resources database $_db config DATABASE_HOST)
-            _db_port=$(parse resources database $_db config DATABASE_PORT)
-            _db_name=$(parse resources database $_db config DATABASE_DB)
+    echo "Parsing env file into $config"
 
-            _db=$(echo $_db | tr '[:lower:]' '[:upper:]')
-            echo "export MYSQL_HOST_${_db}=${_db_host}" >> "$config"
-            echo "export MYSQL_PORT_${_db}=${_db_port}" >> "$config"
-            echo "export MYSQL_DB_${_db}=${_db_name}" >> "$config"
-            echo "export MYSQL_USERNAME_${_db}=${_db_user}" >> "$config"
-            echo "export MYSQL_PASSWORD_${_db}=${_db_pass}" >> "$config"
+    _databases=""
+    while read _line; do
+        # Remove first and last quote.
+        echo "export $(echo $_line | sed 's/="/=/;s/"[^"]*$//')" >> "$config" 
+
+        if [[ "$_line" =~ ^MYSQL_URL ]]; then
+            _databases+=$(echo "$_line " | sed 's/="/=/;s/"[^"]*$//')
+        fi
+    done < "$control_dir/env"
+
+    echo "Parsing database URLs"
+    if [ -n "$_databases" ]; then
+        for _db in "$_databases"; do
+            _url=$(echo $_db | sed "s/MYSQL_URL_.*=//")
+            _db_name=$(echo $_url | sed "s/.*\///")
+
+            _host_regexp="s/mysql:\/\///;s/:[0-9]*\/${_db_name}//"
+            _db_host=$(echo $_url | sed "$_host_regexp")
+
+            _port_rexexp="s/mysql:\/\/$_db_host://;s/\/${_db_name}//"
+            _db_port=$(echo $_url | sed "$_port_rexexp")
+            _db_alias=$(echo $_db | sed "s/MYSQL_URL_//;s/=.*//")
+
+            echo "export MYSQL_HOST_${_db_alias}=${_db_host}" >> "$config"
+            echo "export MYSQL_PORT_${_db_alias}=${_db_port}" >> "$config"
+            echo "export MYSQL_DB_${_db_alias}=${_db_name}" >> "$config"
         done
     fi
 }
-
 export_path() {
     echo "Exporting paths for $1"
     echo "export PATH=$app_dir/lib/$1/bin:\$PATH" >> "$config"
