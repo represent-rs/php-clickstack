@@ -7,7 +7,9 @@ config="$control_dir/config"
 load_env() {
     echo "Initializing user-defined parameters"
 
-    . "$control_dir/env"
+    set +e
+        . "$control_dir/env"
+    set -e
     debug="${debug-false}"
     maxPost="${maxPost-__default__}"
 
