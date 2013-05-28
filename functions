@@ -51,7 +51,7 @@ parse_databases() {
         # Remove first and last quote.
         echo "export $(echo $_line | sed 's/="/=/;s/"[^"]*$//')" >> "$config" 
 
-        if [[ "$_line" =~ ^MYSQL_URL ]]; then
+        if [[ "$_line" =~ ^DATABASE ]]; then
             _databases+=$(echo "$_line " | sed 's/="/=/;s/"[^"]*$//')
         fi
     done < "$control_dir/env"
@@ -59,7 +59,7 @@ parse_databases() {
     echo "Parsing database URLs"
     if [ -n "$_databases" ]; then
         for _db in "$_databases"; do
-            _url=$(echo $_db | sed "s/MYSQL_URL_.*=//")
+            _url=$(echo $_db | sed "s/DATABASE_URL_.*=//")
             _db_name=$(echo $_url | sed "s/.*\///")
 
             _host_regexp="s/mysql:\/\///;s/:[0-9]*\/${_db_name}//"
@@ -67,11 +67,11 @@ parse_databases() {
 
             _port_rexexp="s/mysql:\/\/$_db_host://;s/\/${_db_name}//"
             _db_port=$(echo $_url | sed "$_port_rexexp")
-            _db_alias=$(echo $_db | sed "s/MYSQL_URL_//;s/=.*//")
+            _db_alias=$(echo $_db | sed "s/DATABASE_URL_//;s/=.*//")
 
-            echo "export MYSQL_HOST_${_db_alias}=${_db_host}" >> "$config"
-            echo "export MYSQL_PORT_${_db_alias}=${_db_port}" >> "$config"
-            echo "export MYSQL_DB_${_db_alias}=${_db_name}" >> "$config"
+            echo "export DATABASE_HOST_${_db_alias}=${_db_host}" >> "$config"
+            echo "export DATABASE_PORT_${_db_alias}=${_db_port}" >> "$config"
+            echo "export DATABASE_DB_${_db_alias}=${_db_name}" >> "$config"
         done
     fi
 }
