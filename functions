@@ -65,6 +65,9 @@ parse_databases() {
             echo "export DATABASE_HOST_${_db_alias}=${_db_host}" >> "$config"
             echo "export DATABASE_PORT_${_db_alias}=${_db_port}" >> "$config"
             echo "export DATABASE_DB_${_db_alias}=${_db_name}" >> "$config"
+            echo "export MYSQL_HOST_${_db_alias}=${_db_host}" >> "$config"
+            echo "export MYSQL_PORT_${_db_alias}=${_db_port}" >> "$config"
+            echo "export MYSQL_DB_${_db_alias}=${_db_name}" >> "$config"
         done
     fi
 }
