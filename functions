@@ -10,14 +10,8 @@ load_env() {
     set +e
         . "$control_dir/env"
     set -e
-    debug="${debug-false}"
     maxPost="${maxPost-__default__}"
-
-    if [[ "$debug" == "true" ]]; then  
-        logLevel="debug"
-    else
-        logLevel="${logLevel-info}"
-    fi
+    logLevel="${logLevel-info}"
 }
 
 create_app_skel() {
@@ -87,7 +81,7 @@ install_lib() {
     unzip -q "$plugin_dir/lib/$1.zip" -d "$app_dir/lib/$1"
 
     echo "Rewriting $1 permissions"
-    chmod -R g-w,o-rwx "$app_dir/lib/$1"
+    chmod -R g-w "$app_dir/lib/$1"
 
     export_path "$1"
 }
@@ -184,7 +178,7 @@ install_app() {
     fi
     
     echo "Rewriting application permissions"
-    chmod -R g-w,o-rwx "$app_dir/app"
+    chmod -R g-w "$app_dir/app"
 }
 
 write_control() {

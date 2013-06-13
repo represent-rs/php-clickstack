@@ -40,15 +40,6 @@ by the CloudBees logger. To change the Apache log level, specify:
 
 Default is "info"
 
-#### Debugging
-    
-A debug mode is available to debug this stack and/or your application.
-It will produce more logs during setup and start, as well as set the logging
-level of Apache to debug. Once you go out of debugging mode, your previous
-apache log level will be used. To use debug mode, execute:
-
-    bees config:set -a MY_APP -Pdebug=true
-
 #### CloudBees Databases
 
 First, you'll need to bind databases to your app:
@@ -60,12 +51,18 @@ First, you'll need to bind databases to your app:
 In your application, you will have access to the following environment 
 variables:
 
-    MYSQL_USERNAME_BINDING
-    MYSQL_HOST_BINDING
-    MYSQL_PASSWORD_BINDING
-    MYSQL_PORT_BINDING
-    MYSQL_DB_BINDING
+    DATABASE_USERNAME_BINDING
+    DATABASE_HOST_BINDING
+    DATABASE_PASSWORD_BINDING
+    DATABASE_PORT_BINDING
+    DATABASE_DB_BINDING
 
+#### Debugging
+
+There are two control scripts that you can invoke with bees app:instance:invoke
+
+- log: Prints the logs from php and apache
+- print-environment: Prints the configuration files and setup traces
 
 #### Overriding Apache and PHP configuration files
 

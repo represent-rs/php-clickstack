@@ -8,27 +8,6 @@ set +e
 	. "$control_dir/config"
 set -e
 
-if [[ "$debug" == "true" ]]; then 
-	echo -e "\n##### BEGIN PHP INFO #####"
-	_dir=$(pwd)
-	cd "$app_dir/.genapp/setup_status"
-		for _file in *; do
-			echo -e "\n----- Setup status for $_file is: -----" 
-			cat "$_file"
-		done
-	cd "$app_dir/conf"
-		for _file in *; do
-			echo -e "\n----- Configuration file $_file is: -----" 
-			cat "$_file"
-		done
-	cd "$_dir"
-	echo -e "\n----- Config file is: -----"
-	cat "$control_dir/config"
-	echo -e "\n----- Metadata file is: -----"
-	cat "$app_dir/.genapp/metadata.json"
-	echo -e "\n##### END PHP INFO #####"
-fi
-
 . "$control_dir/start-inserts"
 
 echo "Starting apache web server"
