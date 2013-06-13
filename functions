@@ -34,7 +34,6 @@ init_vars() {
     echo "export log_dir=$log_dir" >> "$config"
     echo "export app_dir=$app_dir" >> "$config"
     echo "export app_port=$app_port" >> "$config"
-    echo "export debug=$debug" >> "$config"
 }
 
 parse_databases() {

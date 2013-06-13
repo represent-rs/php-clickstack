@@ -11,12 +11,12 @@ _lines=${2-50}
 
 echo -e "\n##### BEGIN LOGS #####"
 for _file in $_files; do
-	if [ -f "$log_dir/$_file" ]; then
-	    echo -e "\n----- Begin $_file -----"
-	    tail --lines=$_lines "$log_dir/$_file"
-	    echo -e "\n----- End $_file -----"
-	else
-		echo -e "\nNOT FOUND: $_file"
-	fi
+    if [ -f "$log_dir/$_file" ]; then
+        echo -e "\n----- Begin $_file -----"
+        tail --lines=$_lines "$log_dir/$_file"
+        echo -e "\n----- End $_file -----"
+    else
+        echo -e "\nNOT FOUND: $_file"
+    fi
 done
 echo -e "\n##### END LOGS #####"
